@@ -5,15 +5,10 @@ export interface Author {
 }
 
 export const authors: Record<string, Author> = {
-  dillion: {
-    name: "Dillion Verma",
-    position: "Software Engineer",
-    avatar: "/authors/dillion.png",
-  },
-  arghya: {
-    name: "Arghya Das",
-    position: "Design System Engineer",
-    avatar: "/authors/arghya.png",
+  "Avinash Gupta": {
+    name: "Avinash Gupta",
+    position: "Full Stack Developer",
+    avatar: "/authors/avinash.png",
   },
 } as const;
 

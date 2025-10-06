@@ -1,0 +1,315 @@
+---
+title: "Creational Design Patterns Explained with Real-World Examples"
+description: "Understand the five key creational design patterns — Singleton, Factory Method, Abstract Factory, Builder, and Prototype — using real-world coding scenarios."
+date: "2025-07-01"
+tags:
+  [
+    "Design Patterns",
+    "Creational Patterns",
+    "Software Architecture",
+    "OOP",
+    "Engineering",
+  ]
+featured: true
+readTime: "16 min read"
+author: "Avinash Gupta"
+thumbnail: "/thumbnails/creational-patterns.jpeg"
+---
+
+# 🧱 Creational Design Patterns — Explained with Real-World Scenarios
+
+Creational design patterns are like **blueprints for object creation** — they help you manage how objects are instantiated, ensuring your code is flexible, scalable, and easier to maintain.
+
+Let’s explore all **five** creational design patterns, not just with toy examples — but through **real-world coding scenarios** you’ll actually encounter as a developer.
+
+---
+
+## 🧩 1. Singleton Pattern — One Instance to Rule Them All
+
+Imagine your app needs a **single configuration loader** that reads environment variables or a config file. This object is expensive to create and must be shared globally.
+
+That’s the **Singleton Pattern**.
+
+It ensures that only **one instance** of a class exists and provides a **global access point** to it. This is useful for shared resources like configuration managers, logging systems, or caching mechanisms.
+
+However, because it introduces **global state**, Singleton can make testing and parallelism harder. Use it **only when a single shared instance is truly needed**.
+
+Here’s a practical TypeScript example:
+
+```ts
+class AppConfig {
+  private static instance: AppConfig;
+  private config: Record<string, string> = {};
+
+  private constructor() {
+    console.log("Loading configuration...");
+    this.config = {
+      apiUrl: process.env.API_URL || "https://api.myapp.com",
+      env: process.env.NODE_ENV || "production",
+    };
+  }
+
+  public static getInstance(): AppConfig {
+    if (!AppConfig.instance) {
+      AppConfig.instance = new AppConfig();
+    }
+    return AppConfig.instance;
+  }
+
+  public get(key: string) {
+    return this.config[key];
+  }
+}
+
+// Usage
+const config1 = AppConfig.getInstance();
+const config2 = AppConfig.getInstance();
+console.log(config1 === config2); // true
+```
+
+In multithreaded systems, ensure proper **synchronization or lazy initialization** for thread safety.
+
+---
+
+## 🏭 2. Factory Method Pattern — Delegating Object Creation
+
+Picture this: you’re building a **notification system** that can send emails, SMS, or push notifications. The type of notification depends on user preference.
+
+You could use `if`/`else` blocks everywhere — or you could let the **Factory Method Pattern** handle object creation.
+
+The Factory Method defines an interface for creating objects but lets **subclasses decide which class to instantiate**.
+
+This makes the system open for extension but closed for modification — a core **SOLID principle**.
+
+```ts
+interface Notification {
+  send(message: string): void;
+}
+
+class EmailNotification implements Notification {
+  send(message: string) {
+    console.log(`📧 Sending Email: ${message}`);
+  }
+}
+
+class SMSNotification implements Notification {
+  send(message: string) {
+    console.log(`📱 Sending SMS: ${message}`);
+  }
+}
+
+abstract class NotificationFactory {
+  abstract createNotification(): Notification;
+
+  notifyUser(message: string) {
+    const notification = this.createNotification();
+    notification.send(message);
+  }
+}
+
+class EmailFactory extends NotificationFactory {
+  createNotification() {
+    return new EmailNotification();
+  }
+}
+
+class SMSFactory extends NotificationFactory {
+  createNotification() {
+    return new SMSNotification();
+  }
+}
+
+// Usage
+const factory = new EmailFactory();
+factory.notifyUser("Welcome to our app!");
+```
+
+Use it when your system must decide object type **at runtime**. The pitfall? Too many small factories can increase code complexity — use wisely.
+
+---
+
+## 🏗️ 3. Abstract Factory Pattern — Families of Related Objects
+
+Now, imagine you’re developing a **UI library** that supports both **light** and **dark themes**. Each theme has its own buttons, cards, and modals — but they must look consistent.
+
+You can’t just create these objects randomly. You need a **factory that produces families of related objects**.
+
+That’s the **Abstract Factory Pattern**.
+
+It provides an interface for creating related objects without specifying their concrete classes.
+
+```ts
+interface Button {
+  render(): void;
+}
+interface Card {
+  display(): void;
+}
+
+class LightButton implements Button {
+  render() {
+    console.log("Rendering Light Button ☀️");
+  }
+}
+class DarkButton implements Button {
+  render() {
+    console.log("Rendering Dark Button 🌑");
+  }
+}
+
+class LightCard implements Card {
+  display() {
+    console.log("Displaying Light Card ☀️");
+  }
+}
+class DarkCard implements Card {
+  display() {
+    console.log("Displaying Dark Card 🌑");
+  }
+}
+
+interface ThemeFactory {
+  createButton(): Button;
+  createCard(): Card;
+}
+
+class LightThemeFactory implements ThemeFactory {
+  createButton() {
+    return new LightButton();
+  }
+  createCard() {
+    return new LightCard();
+  }
+}
+
+class DarkThemeFactory implements ThemeFactory {
+  createButton() {
+    return new DarkButton();
+  }
+  createCard() {
+    return new DarkCard();
+  }
+}
+
+// Usage
+function renderUI(factory: ThemeFactory) {
+  const button = factory.createButton();
+  const card = factory.createCard();
+  button.render();
+  card.display();
+}
+
+renderUI(new DarkThemeFactory());
+```
+
+Use this when you need **consistent families of objects** that should work together.  
+Pitfall: adding new product types (like sliders) requires updating all factories.
+
+---
+
+## 🧰 4. Builder Pattern — Constructing Complex Objects Step by Step
+
+You’re designing a **house builder app** where users can configure rooms, floors, pools, and gardens.  
+A constructor with dozens of parameters is messy — this is where **Builder Pattern** shines.
+
+The Builder lets you **construct complex objects step by step**. It’s especially useful when creating objects that require many configurations.
+
+```ts
+class House {
+  rooms: number = 0;
+  hasGarden: boolean = false;
+  hasPool: boolean = false;
+
+  describe() {
+    console.log(
+      `House with ${this.rooms} rooms, ${
+        this.hasGarden ? "a garden" : "no garden"
+      }, and ${this.hasPool ? "a pool" : "no pool"}.`
+    );
+  }
+}
+
+class HouseBuilder {
+  private house: House;
+
+  constructor() {
+    this.house = new House();
+  }
+
+  addRooms(n: number) {
+    this.house.rooms = n;
+    return this;
+  }
+
+  addGarden() {
+    this.house.hasGarden = true;
+    return this;
+  }
+
+  addPool() {
+    this.house.hasPool = true;
+    return this;
+  }
+
+  build() {
+    return this.house;
+  }
+}
+
+// Usage
+const villa = new HouseBuilder().addRooms(5).addGarden().addPool().build();
+villa.describe();
+```
+
+When to use: when object construction involves **optional parameters** or **multiple configurations**.  
+Pitfall: increases code size due to many builder classes.
+
+---
+
+## 🧬 5. Prototype Pattern — Cloning Instead of Building
+
+Consider a game engine that spawns **enemy units**. Each unit has complex configurations (AI, health, weapons).  
+Creating every unit from scratch would be expensive. So, you **clone an existing prototype** instead.
+
+That’s the **Prototype Pattern** — it lets you copy existing objects without depending on their exact classes.
+
+```ts
+interface EnemyPrototype {
+  clone(): EnemyPrototype;
+}
+
+class Enemy implements EnemyPrototype {
+  constructor(
+    public type: string,
+    public health: number,
+    public weapon: string
+  ) {}
+
+  clone(): EnemyPrototype {
+    return new Enemy(this.type, this.health, this.weapon);
+  }
+}
+
+// Usage
+const baseEnemy = new Enemy("Orc", 100, "Axe");
+const enemy1 = baseEnemy.clone();
+const enemy2 = baseEnemy.clone();
+console.log(enemy1, enemy2);
+```
+
+Use it when creating an object is **costly or complex**.  
+Pitfall: deep vs shallow copy confusion — always ensure correct clone behavior.
+
+---
+
+## 🧭 Final Thoughts
+
+Creational design patterns are the foundation for scalable software architecture.
+
+They help you:
+
+- Simplify complex object creation
+- Avoid tightly coupled constructors
+- Promote code reusability and testability
+
+Mastering these five patterns — **Singleton, Factory Method, Abstract Factory, Builder, and Prototype** — gives you the tools to design cleaner, more adaptable systems.

@@ -1,0 +1,202 @@
+---
+title: "System Design Question — Resume Builder (Builder) — Solution"
+description: "Solution: Implement a Resume Builder in TypeScript — problem statement, implementation, usage, and notes."
+date: "2025-10-31"
+tags:
+  [
+    "Design Patterns",
+    "Creational Patterns",
+    "System Design",
+    "OOP",
+    "Engineering",
+    "LLD",
+    "Builder Design Pattern",
+    "Resume Builder",
+  ]
+featured: true
+readTime: "16 min read"
+author: "Avinash Gupta"
+thumbnail: "/thumbnails/builder.png"
+---
+
+# 🧱 Resume Builder — Builder (System Design Question — Solution)
+
+This document is a solution write-up for the system design question: implement a Resume Builder where resume creation follows a step-by-step process. It presents the problem, a practical TypeScript implementation using the Builder pattern, usage examples, and notes on production considerations.
+
+---
+
+## Problem — Resume Builder (Builder use-case)
+
+Building a resume involves collecting and organizing various pieces of information in a structured way. The requirements for a robust resume builder are:
+
+- Support step-by-step construction of complex resume objects
+- Allow different types of resumes to be built using the same construction process
+- Provide methods to:
+  - Set personal information (name, contact details)
+  - Add educational background
+  - Add work experiences
+  - Add skills and projects
+  - Build the final resume object
+- Keep the construction process flexible and independent of how the resume parts are assembled
+
+**Why does this map well to the Builder pattern?**
+
+- Resume creation involves multiple steps with different types of data
+- The construction process should be independent of how the resume is represented
+- Different types of resumes might need different representations
+- The pattern allows fine control over the construction process
+
+---
+
+### Example Inputs (for the tutorial)
+
+A TypeScript interface defining the Resume Builder contract:
+
+```ts
+export interface IResumeBuilder {
+    setName(name: string): IResumeBuilder;
+    setContactInfo(contactMethod: TContactMethod, contactValue: string): IResumeBuilder;
+    setEducation(education: TEducation): IResumeBuilder;
+    setExperience(experience: TExperience): IResumeBuilder;
+    setSkill(skill: string): IResumeBuilder;
+    setProject(project: TProject): IResumeBuilder;
+    build(): TResume;
+}
+```
+
+And the supporting types:
+
+```ts
+export type TContactMethod = "Mail" | "Phone" | "Address";
+export type TEducation = {
+    institute: string;
+    fromYear: number;
+    toYear: number | "Present";
+    cgpa?: number;
+};
+export type TExperience = {
+    company: string;
+    designation: string;
+    description?: string;
+    fromYear: number;
+    toYear: number | "Present";
+};
+```
+
+(You can find these in the example `utils.ts` in the exercise folder.)
+
+---
+
+## Solution — TypeScript Builder Resume Manager
+
+We'll implement the following classes:
+
+- **ProfessionalResumeBuilder:** Concrete builder implementing the resume construction steps
+- **Client:** Example usage of the builder pattern
+
+### Key Design Choices
+
+- Builder interface defining all necessary steps for resume construction
+- Method chaining for a fluent builder interface
+- Flexible resume structure allowing optional fields
+- Immutable final resume object
+
+---
+
+### 🧩 Implementation (Concise, Annotated)
+
+```ts
+export class ProfessionalResumeBuilder implements IResumeBuilder {
+    private resume: TResume;
+
+    public constructor() {
+        this.resume = {
+            name: '',
+            contacts: [],
+            educations: [],
+            experiences: [],
+            skills: [],
+            projects: []
+        };
+    }
+
+    public setName(name: string): IResumeBuilder {
+        this.resume.name = name;
+        return this;
+    }
+
+    public setContactInfo(contactMethod: TContactMethod, contactValue: string): IResumeBuilder {
+        this.resume.contacts.push({
+            method: contactMethod,
+            value: contactValue
+        });
+        return this;
+    }
+
+    public setEducation(education: TEducation): IResumeBuilder {
+        this.resume.educations.push(education);
+        return this;
+    }
+
+    // ... other builder methods ...
+
+    public build(): TResume {
+        return this.resume;
+    }
+}
+```
+
+---
+
+### 🧠 Usage Example
+
+```ts
+const resumeBuilder = new ProfessionalResumeBuilder();
+
+const resume = resumeBuilder
+    .setName("Avinash Gupta")
+    .setContactInfo("Phone", "+91 99999 99999")
+    .setContactInfo("Mail", "hello.avinash@zohomail.in")
+    .setEducation({
+        institute: "Narula Institute of Technology",
+        fromYear: 2020,
+        toYear: 2024,
+        cgpa: 9.21
+    })
+    .setExperience({
+        company: "Infosys",
+        designation: "Specialist Programmer L1",
+        fromYear: 2024,
+        toYear: "Present",
+    })
+    .setSkill("NodeJS")
+    .setSkill("NextJS")
+    .setSkill("LLD")
+    .build();
+
+console.log(resume);
+```
+
+---
+
+## Notes, Edge-Cases & Alternatives
+
+- **Validation:** Add validation in setter methods to ensure data consistency
+- **Immutability:** Consider making the final resume object immutable using Object.freeze()
+- **Multiple builders:** Create different builders for different resume formats (academic, professional, creative)
+- **Optional steps:** Allow skipping optional sections while maintaining a valid resume structure
+- **Error handling:** Implement proper error handling for required fields and invalid data
+- **Template support:** Consider adding predefined template methods in the builder class
+- **Testing:** Test different construction sequences and validate the final resume structure
+
+---
+
+## ✅ Conclusion
+
+The Builder pattern excels at creating complex objects step by step, making it perfect for a resume builder implementation. The TypeScript example demonstrates how to create a flexible, maintainable solution that separates the construction process from the representation.
+
+The pattern's benefits shine through in:
+- Step-by-step construction with clear method names
+- Support for different resume formats through different builders
+- Clean separation between construction and representation
+- Easy extension for new resume sections or formats

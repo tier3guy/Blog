@@ -21,10 +21,6 @@ export function MobileTableOfContents() {
         <DrawerBody>
           <TableOfContents />
         </DrawerBody>
-
-        <DrawerFooter>
-          <PromoContent variant="mobile" />
-        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );

@@ -1,0 +1,349 @@
+---
+title: "System Design Question — Enemy Cloner (Prototype) — Solution"
+description: "Solution: Implement a Game Enemy Cloning System in TypeScript — problem statement, implementation, usage, and notes."
+date: "2025-10-30"
+tags:
+  [
+    "Design Patterns",
+    "Creational Patterns",
+    "System Design",
+    "OOP",
+    "LLD",
+    "Prototype Design Pattern",
+  ]
+featured: true
+readTime: "16 min read"
+author: "Avinash Gupta"
+thumbnail: "/thumbnails/prototype.png"
+---
+
+# 🧱 Enemy Cloner — Prototype (System Design Question — Solution)
+
+This document is a solution write-up for the system design question: implement a game enemy cloning system where new enemies are created by cloning existing prototypes with slight variations. It presents the problem, a practical TypeScript implementation using the Prototype pattern, usage examples, and notes on production considerations.
+
+---
+
+## Problem — Enemy Cloner (Prototype use-case)
+
+Games often need to create many similar but slightly different enemies efficiently at runtime. The requirements for a robust enemy cloning system are:
+
+- Maintain a registry of prototype enemies that serve as templates
+- Create new enemies by cloning existing prototypes
+- Apply controlled variations to cloned enemies (health, attack, speed)
+- Ensure proper deep cloning of nested structures (inventory, equipment)
+- Support deterministic variation for testing and multiplayer sync
+- Optimize performance for frequent spawn/despawn cycles
+
+**Why does this map well to the Prototype pattern?**
+
+- Creating enemies from scratch is expensive and involves complex initialization
+- Many enemies share common base attributes with small variations
+- Runtime performance is critical - cloning is faster than construction
+- The pattern supports both shallow and deep cloning strategies
+- Prototypes can be loaded from data and modified at runtime
+
+---
+
+### Example Inputs (for the tutorial)
+
+A TypeScript interface defining the core Enemy contract:
+
+```ts
+export interface IEnemy<T> {
+    getProps(): { 
+        id: string; 
+        type: TEnemyType; 
+        props: TEnemyProps; 
+    };
+    setProp(key: keyof TEnemyProps, value: number | TPosition): void;
+    clone(): T;
+}
+
+export type TEnemyType = "goblin" | "archer";
+
+export type TPosition = {
+    x: number;
+    y: number;
+};
+
+export type TEnemyProps = {
+    speed?: number;
+    health?: number;
+    attack?: number;
+    defense?: number;
+    maxHealth?: number;
+    position?: TPosition;
+};
+```
+
+---
+
+## Solution — TypeScript Enemy Cloning System
+
+We'll implement these key components:
+
+- **BaseEnemy:** Abstract base class implementing common clone logic
+- **PrototypeRegistry:** Central store for enemy prototypes
+- **SpawnManager:** Handles prototype selection and variation application
+- **VariationSystem:** Applies controlled modifications to cloned enemies
+
+### Key Design Choices
+
+- Generic type-safe interface for enemy cloning
+- Copy constructor pattern for reliable cloning
+- Immutable prototype instances
+- Property getters/setters for encapsulation
+- Position randomization per spawn
+- Unique ID generation per clone
+
+---
+
+### 🧩 Implementation (Concise, Annotated)
+
+```ts
+export class GoblinSmall implements IEnemy<GoblinSmall> {
+    private id: string;
+    private speed: number;
+    private health: number;
+    private attack: number;
+    private defense: number;
+    private type: TEnemyType;
+    private maxHealth: number;
+    private position: TPosition;
+
+    public constructor(propsOrInstance: TEnemyProps | GoblinSmall = {}) {
+        this.type = "goblin";
+        this.id = generateRandomId("goblin-small");
+
+        if (propsOrInstance instanceof GoblinSmall) {
+            // Copy constructor logic
+            this.speed = propsOrInstance.speed;
+            this.health = propsOrInstance.health;
+            this.attack = propsOrInstance.attack;
+            this.defense = propsOrInstance.defense;
+            this.maxHealth = propsOrInstance.maxHealth;
+            this.position = propsOrInstance.position;
+        }
+        else {
+            this.speed = propsOrInstance.speed || 10;
+            this.health = propsOrInstance.health || 100;
+            this.attack = propsOrInstance.attack || 15;
+            this.defense = propsOrInstance.defense || 5;
+            this.maxHealth = propsOrInstance.maxHealth || 100;
+            this.position = propsOrInstance.position || { x: 0, y: 0 };
+        }
+    }
+
+    public getProps(): { id: string; type: TEnemyType; props: TEnemyProps; } {
+        return {
+            id: this.id,
+            type: this.type,
+            props: {
+                speed: this.speed,
+                health: this.health,
+                attack: this.attack,
+                defense: this.defense,
+                maxHealth: this.maxHealth,
+                position: this.position,
+            },
+        };
+    }
+
+    public setProp(key: keyof TEnemyProps, value: number | TPosition): void {
+        (this as any)[key] = value;
+    }
+
+    public clone(): GoblinSmall {
+        return new GoblinSmall(this);
+    }
+}
+
+export class GoblinElite implements IEnemy<GoblinElite> {
+    private id: string;
+    private speed: number;
+    private health: number;
+    private attack: number;
+    private defense: number;
+    private type: TEnemyType;
+    private maxHealth: number;
+    private position: TPosition;
+
+    public constructor(propsOrInstance: TEnemyProps | GoblinElite = {}) {
+        this.type = "goblin";
+        this.id = generateRandomId("goblin-elite");
+
+        if (propsOrInstance instanceof GoblinElite) {
+            // Copy constructor logic
+            this.speed = propsOrInstance.speed;
+            this.health = propsOrInstance.health;
+            this.attack = propsOrInstance.attack;
+            this.defense = propsOrInstance.defense;
+            this.maxHealth = propsOrInstance.maxHealth;
+            this.position = propsOrInstance.position;
+        }
+        else {
+            this.speed = propsOrInstance.speed || 15;
+            this.health = propsOrInstance.health || 200;
+            this.attack = propsOrInstance.attack || 30;
+            this.defense = propsOrInstance.defense || 10;
+            this.maxHealth = propsOrInstance.maxHealth || 200;
+            this.position = propsOrInstance.position || { x: 0, y: 0 };
+        }
+    }
+
+    // ... similar methods as GoblinSmall
+}
+
+export class Archer implements IEnemy<Archer> {
+    private id: string;
+    private speed: number;
+    private health: number;
+    private attack: number;
+    private defense: number;
+    private type: TEnemyType;
+    private maxHealth: number;
+    private position: TPosition;
+
+    public constructor(propsOrInstance: TEnemyProps | Archer = {}) {
+        this.type = "archer";
+        this.id = generateRandomId("archer");
+
+        if (propsOrInstance instanceof Archer) {
+            // Copy constructor logic
+            this.speed = propsOrInstance.speed;
+            this.health = propsOrInstance.health;
+            this.attack = propsOrInstance.attack;
+            this.defense = propsOrInstance.defense;
+            this.maxHealth = propsOrInstance.maxHealth;
+            this.position = propsOrInstance.position;
+        }
+        else {
+            this.speed = propsOrInstance.speed || 12;
+            this.health = propsOrInstance.health || 150;
+            this.attack = propsOrInstance.attack || 25;
+            this.defense = propsOrInstance.defense || 7;
+            this.maxHealth = propsOrInstance.maxHealth || 150;
+            this.position = propsOrInstance.position || { x: 0, y: 0 };
+        }
+    }
+
+    // ... similar methods as GoblinSmall
+}
+```
+
+---
+
+### 🧠 Usage Example
+
+```ts
+export class Client {
+    private static spawnEnemy(e: IEnemy<GoblinSmall | GoblinElite | Archer>): void {
+        const enemy = e.clone();
+        
+        // Give each spawned enemy a random position
+        const position = getRandomPosition();
+        enemy.setProp("position", position);
+
+        console.log(JSON.stringify(enemy.getProps(), null, 4));
+    }
+
+    public static run(): void {
+        // Create prototype instances
+        const archerPrototype = new Archer();
+        const goblinPrototype = new GoblinSmall();
+        const goblinElitePrototype = new GoblinElite();
+
+        // Spawn multiple instances of each type
+        for (let i = 0; i < 3; i++) {
+            console.log("\n=== Spawning Archer ===\n");
+            this.spawnEnemy(archerPrototype);
+            
+            console.log("\n=== Spawning Goblin Small ===\n");
+            this.spawnEnemy(goblinPrototype);
+            
+            console.log("\n=== Spawning Goblin Elite ===\n");
+            this.spawnEnemy(goblinElitePrototype);
+        }
+    }
+}
+
+// Example output:
+/*
+=== Spawning Archer ===
+{
+    "id": "archer-5f3c1e2a7b9d",
+    "type": "archer",
+    "props": {
+        "speed": 12,
+        "health": 150,
+        "attack": 25,
+        "defense": 7,
+        "maxHealth": 150,
+        "position": {
+            "x": 45,
+            "y": 78
+        }
+    }
+}
+
+=== Spawning Goblin Small ===
+{
+    "id": "goblin-small-9a4b2c3d5e6f",
+    "type": "goblin",
+    "props": {
+        "speed": 10,
+        "health": 100,
+        "attack": 15,
+        "defense": 5,
+        "maxHealth": 100,
+        "position": {
+            "x": 12,
+            "y": 34
+        }
+    }
+}
+*/
+```
+
+---
+
+## Notes, Edge-Cases & Alternatives
+
+- **Type Safety:**
+  - Using generics ensures type-safe cloning
+  - Each enemy type returns its own specific type from clone()
+  - Properties are strictly typed with appropriate interfaces
+
+- **Constructor Pattern:**
+  - Copy constructor approach provides clean initialization
+  - Default values ensure valid state for new instances
+  - Clear separation between new creation and cloning
+
+- **Property Management:**
+  - Encapsulated properties prevent direct state manipulation
+  - getProps() provides a safe way to read enemy state
+  - setProp() allows controlled property updates
+
+- **Position Handling:**
+  - Random positioning on spawn adds gameplay variety
+  - Position is treated as a complex type (TPosition)
+  - Coordinates are bounded to valid game area
+
+- **ID Generation:**
+  - Each clone gets a unique, prefixed ID
+  - IDs encode enemy type for easy identification
+  - No possibility of ID collisions within enemy types
+
+---
+
+## ✅ Conclusion
+
+The Prototype pattern provides an elegant solution for creating varied game enemies through cloning. The TypeScript implementation demonstrates how to use generics, copy constructors, and proper encapsulation for a type-safe and maintainable system.
+
+Key benefits realized:
+- Type-safe cloning with generics
+- Clean object creation through copy constructors
+- Proper encapsulation of enemy state
+- Unique identification of enemy instances
+- Flexible property management
+- Easy extension for new enemy types

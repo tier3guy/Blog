@@ -1,0 +1,247 @@
+---
+title: "System Design Question — Notification System (Factory) — Solution"
+description: "Solution: Implement a Multi-Channel Notification System in TypeScript — problem statement, implementation, usage, and notes."
+date: "2025-11-01"
+tags:
+  [
+    "Creational Patterns",
+    "System Design",
+    "OOP",
+    "LLD",
+    "Factory Design Pattern",
+  ]
+featured: true
+readTime: "16 min read"
+author: "Avinash Gupta"
+thumbnail: "/thumbnails/factory.png"
+---
+
+# 🧱 Notification System — Factory (System Design Question — Solution)
+
+This document is a solution write-up for the system design question: implement a notification system that can send messages through different channels (Email, SMS, Push) based on user preferences. It presents the problem, a practical TypeScript implementation using the Factory pattern, usage examples, and notes on production considerations.
+
+---
+
+## Problem — Notification System (Factory use-case)
+
+Modern applications need to communicate with users through various channels. The requirements for a flexible notification system are:
+
+- Support multiple notification channels (Email, SMS, Push)
+- Allow sending to multiple channels for a single notification
+- Make channel selection flexible and configurable
+- Keep channel implementations independent and encapsulated
+- Allow easy addition of new notification channels
+
+**Why does this map well to the Factory pattern?**
+
+- Different notification channels share a common interface but have distinct implementations
+- Channel selection can be determined at runtime
+- New channels can be added without modifying existing code
+- Factory encapsulates the creation logic and dependencies
+- Clients remain decoupled from specific notification implementations
+
+---
+
+### Example Inputs (for the tutorial)
+
+A TypeScript interface defining the notification contract:
+
+```ts
+export type TNotificationChannel = 'Email' | 'SMS' | 'Push';
+
+export type TNotificationPayload = {
+    id: string;
+    message: string;
+    channels: TNotificationChannel[];
+};
+
+export type TNotificationResult = {
+    id: string;
+    error?: string;
+    success: boolean;
+    channel: TNotificationChannel;
+};
+
+export interface INotify {
+    notify(payload: TNotificationPayload): TNotificationResult;
+}
+```
+
+---
+
+## Solution — TypeScript Notification System
+
+We'll implement these key components:
+
+- **Channel-specific notifiers:** Concrete implementations for Email, SMS, and Push
+- **NotificationFactory:** Creates appropriate notifier instances
+- **NotificationService:** Coordinates sending through multiple channels
+
+### Key Design Choices
+
+- Interface-based design for notification channels
+- Factory pattern for notifier instantiation
+- Service layer for multi-channel coordination
+- Type-safe channel enumeration
+- Consistent result structure across channels
+
+---
+
+### 🧩 Implementation (Concise, Annotated)
+
+```ts
+// Concrete notification implementations
+export class EmailNotification implements INotify {
+    public notify(payload: TNotificationPayload): TNotificationResult {
+        // Simulate sending email notification
+        console.log(`Sending Email Notification: ${payload.message}`);
+        return {
+            id: payload.id,
+            success: true,
+            channel: 'Email'
+        };
+    }
+}
+
+export class SMSNotification implements INotify {
+    public notify(payload: TNotificationPayload): TNotificationResult {
+        // Simulate sending SMS notification
+        console.log(`Sending SMS Notification: ${payload.message}`);
+        return {
+            id: payload.id,
+            success: true,
+            channel: 'SMS'
+        };
+    }
+}
+
+export class PushNotification implements INotify {
+    public notify(payload: TNotificationPayload): TNotificationResult {
+        // Simulate sending Push notification
+        console.log(`Sending Push Notification: ${payload.message}`);
+        return {
+            id: payload.id,
+            success: true,
+            channel: 'Push'
+        };
+    }
+}
+
+// Factory for creating notification instances
+export class NotificationFactory {
+    public createNotification(channel: string): INotify {
+        switch (channel) {
+            case 'Email':
+                return new EmailNotification();
+            case 'SMS':
+                return new SMSNotification();
+            case 'Push':
+                return new PushNotification();
+            default:
+                throw new Error(`Notification channel ${channel} is not supported.`);
+        }
+    }
+}
+
+// Service for coordinating multi-channel notifications
+export class NotificationService {
+    private factory: NotificationFactory;
+
+    public constructor(factory: NotificationFactory) {
+        this.factory = factory;
+    }
+
+    public sendNotification(payload: TNotificationPayload): TNotificationResult[] {
+        const results: TNotificationResult[] = [];
+        for (const channel of payload.channels) {
+            const notifier = this.factory.createNotification(channel);
+            const result = notifier.notify(payload);
+            results.push(result);
+        }
+        return results;
+    }
+}
+```
+
+---
+
+### 🧠 Usage Example
+
+```ts
+export class Client {
+    public static main(): void {
+        // Create factory and service
+        const factory = new NotificationFactory();
+        const service = new NotificationService(factory);
+
+        // Create notification payload
+        const payload: TNotificationPayload = {
+            id: '1',
+            message: 'This is a test notification',
+            channels: ['Email', 'SMS', 'Push']
+        };
+
+        // Send notification through all channels
+        const results = service.sendNotification(payload);
+        console.log('Notification Results:', results);
+    }
+}
+
+// Run the client
+Client.main();
+
+// Output:
+// Sending Email Notification: This is a test notification
+// Sending SMS Notification: This is a test notification
+// Sending Push Notification: This is a test notification
+// 
+// Notification Results: [
+//   { id: '1', success: true, channel: 'Email' },
+//   { id: '1', success: true, channel: 'SMS' },
+//   { id: '1', success: true, channel: 'Push' }
+// ]
+```
+
+---
+
+## Notes, Edge-Cases & Alternatives
+
+- **Error Handling:**
+  - Each channel should handle its specific errors
+  - Service layer should aggregate results
+  - Failed channels shouldn't stop other channels
+
+- **Channel Configuration:**
+  - Channels might need different configuration
+  - Consider using dependency injection for channel-specific dependencies
+  - Support runtime configuration updates
+
+- **Async Operations:**
+  - Real implementations would be asynchronous
+  - Consider using Promise.all for parallel sending
+  - Implement timeouts per channel
+
+- **Testing:**
+  - Mock each channel independently
+  - Test factory with invalid channels
+  - Verify multi-channel coordination
+  - Test error scenarios
+
+- **Extension Points:**
+  - New channels just need to implement INotify
+  - Factory can be extended without modifying existing code
+  - Service can be enhanced with retry logic or priorities
+
+---
+
+## ✅ Conclusion
+
+The Factory pattern provides a clean solution for managing multiple notification channels. The TypeScript implementation demonstrates how to create a flexible, extensible system that can easily accommodate new channels while keeping the core logic simple and maintainable.
+
+Key benefits realized:
+- Clean separation between channel implementations
+- Runtime channel selection
+- Easy addition of new channels
+- Consistent interface across all channels
+- Simple multi-channel coordination
+- Type-safe implementation
